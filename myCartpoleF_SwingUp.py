@@ -153,7 +153,8 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.state = None
 
         self.steps_beyond_terminated = None
-        
+
+        self.previous_force = 0
         # seems to be outdated
         """
         self.seed()
@@ -287,13 +288,23 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         # self.state = (x, x_dot, theta, theta_dot)
         return np.array( (x, x_dot,theta, theta_dot), dtype = np.float32).flatten()
 
-    def reward(self):
-        
-        x, x_dot, theta, theta_dot = self.state
-        energy_total = 2/3 * self.masspole * self.length ** 2 * theta_dot + self.masspole * self.length * self.gravity * (math.cos(theta) - 1); 
-        lyapunov_2 = 1/2 * ( energy_total )**2 + 1e-4 * (1 - (math.cos(theta))**3 ); 
+    def reward(self, terminated, off_track):
 
-        return energy_total
+        x, x_dot, theta, theta_dot = self.state
+        x_bound = 0.23
+        B = 0
+        if abs(x) > x_bound:
+            B = 1
+        reward = -0.1 * (5 * (theta + math.pi) ** 2 + x ** 2 + 0.05 * self.previous_force ** 2) - 100 * B
+        # Reward function
+
+        # Apply off-track penalty and termination
+        #if terminated or off_track:
+        if off_track:
+            reward -= 100  # Large penalty for failure
+
+
+        return reward
         #(GEARS (?))
         
     def step(self, action):
@@ -306,48 +317,15 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         # Nikki modified the following force from continuous_mountain_car
         # force = min(max(action[0], -self.max_action), self.max_action) * self.max_action
         self.state = self.stepSwingUp(force)
-        
-        # x, theta, x_dot, theta_dot = self.state
         x, x_dot, theta, theta_dot = self.state
-        """
-        assert self.observation_space.contains(
-            self.state
-        ), f"{self.state!r} ({type(self.state)}) invalid"
-        
-        # termination criteria changed to abs(theta)<0.05 and abs(x)<0.05
-        
-        terminated = bool(
-                (np.abs(theta) <= self.theta_threshold_radians/4)
-                or (np.abs(x) >= self.x_threshold)
-                )
-        """
-        
-        terminated = bool(abs(theta)<self.theta_threshold_radians/4) # 1 if pole stands up - can turn off
-        off_track = bool(abs(x)>self.x_threshold) # 1 if cart is off track - can turn off and reset
-        
 
-        if not terminated:
-            if off_track:
-                reward = -1000.0 # (GEARS (?))
-            else:
- #               reward = reward(self.state) #(GEARS (?))
-                    reward = 1000
-        elif self.steps_beyond_terminated is None:
-            # Pole just fell!
-            self.steps_beyond_terminated = 0
-#            reward = reward(self.state)
-            reward = 100
-        else:
-            if self.steps_beyond_terminated == 0:
-                logger.warn(
-                    "You are calling 'step()' even though this "
-                    "environment has already returned terminated = True. You "
-                    "should always call 'reset()' once you receive 'terminated = "
-                    "True' -- any further steps are undefined behavior."
-                )
-            self.steps_beyond_terminated += 1
-            reward = +1000.0
-        
+        terminated = bool(abs(theta) < self.theta_threshold_radians / 4)  # 1 if pole stands up - can turn off
+        off_track = bool(abs(x) > self.x_threshold)
+
+        reward = self.reward(terminated, off_track)
+
+
+        self.previous_force = force
         # Nikki copied the following reward from continuous_mountain_car
         # reward = 0.0
         # if terminated:
@@ -367,6 +345,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         if self.render_mode == "human":
             self.render()
+        terminated = False
         return obs, reward, terminated, off_track, {}
                  # quad_reward, terminated, False, {}
 
@@ -398,7 +377,6 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.steps_beyond_terminated = None
         
         x, x_dot, theta, theta_dot = self.state
-
         obs = np.array( (np.sin(theta), np.cos(theta), theta_dot, x, x_dot), dtype=np.float32).flatten() # I think (?) might need rotation
         # to go from observation (obs) angles to state space angle, need the following transformation (rotate the coordinate by pi/2):
         # state_angle = math.atan2(obs_cosangle, -obs_sinangle) - pi/2
