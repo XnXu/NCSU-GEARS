@@ -1,3 +1,4 @@
+# [Solving Cart-Pole Swing Up and Balance]
 Group Project for NC State GEARS program
 
 # [Attention!!!]
