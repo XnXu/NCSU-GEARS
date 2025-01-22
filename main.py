@@ -1,10 +1,10 @@
 import argparse
 import gymnasium as gym
-from stable_baselines3 import DDPG
+from stable_baselines3 import DDPG, TD3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.vec_env import DummyVecEnv
 import numpy as np
-
+import math
 # Setting up the argument parser for command-line inputs
 parser = argparse.ArgumentParser()
 
@@ -16,6 +16,9 @@ parser.add_argument('--train', type=bool, default=False, help='Train the model (
 
 # Whether to load a pre-trained model
 parser.add_argument('--load', type=bool, default=True, help='Load a pre-trained model (True/False)')
+
+#Path of the pre-trained model
+parser.add_argument('--load_path', type=str, default='model/td3_cartpole_swingup', help="Path to load pre-trained model")
 
 # Path to save the trained model
 parser.add_argument('--save_path', default=None, help='Path to save the model (set to None to skip saving)')
@@ -38,6 +41,7 @@ load = args.load
 train_timesteps = args.train_timesteps
 eval_episodes = args.eval_episodes
 max_episode_step = args.max_episode_step
+load_path = args.load_path
 save_path = args.save_path
 
 # Register the custom CartPoleSwingUp environment with Gym
@@ -54,7 +58,7 @@ env = DummyVecEnv([lambda: gym.make('CartPoleSwingUp', render_mode='human')])
 # Load or initialize the DDPG model
 if load:
     print("Loading the pre-trained model...")
-    model = DDPG.load('model/swing_up.zip', env=env)
+    model = TD3.load(path=load_path, env=env)
 else:
     # Add noise to actions for exploration during training
     action_noise = NormalActionNoise(
@@ -78,12 +82,14 @@ if train_timesteps:
 # Evaluate the model
 print('--------------Evaluating the Model--------------')
 for episode in range(eval_episodes):
-    obs = env.reset()  # Reset the environment at the start of each episode
+    state = env.reset()  # Reset the environment at the start of each episode
     done = False
     total_reward = 0  # Accumulate rewards for this episode
+
     while not done:
-        action, _ = model.predict(obs, deterministic=False)  # Predict the action
-        obs, reward, done, info = env.step(action)  # Take the action and observe the result
+        action, _ = model.predict(state, deterministic=False)  # Predict the action
+        state, reward, done, info = env.step(action)  # Take the action and observe the result
+        #x, x_dot, theta, theta_dot = state
         total_reward += reward  # Add the reward to the total
         env.render()  # Render the environment
     print(f'Episode: {episode + 1} | Total Reward: {total_reward}')
