@@ -27,18 +27,19 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 # class myCartPoleEnvF(gym.Env):
     """
     Description:
-        A pole is attached by an un-actuated joint to a cart, which moves along a frictionless track. The pendulum starts upright, and the goal is to prevent it from falling over by increasing and reducing the cart's velocity.
+        A pole is attached by an un-actuated joint to a cart
 
     Source:
-        This environment corresponds to the version of the cart-pole problem described by Barto, Sutton, and Anderson
+        This environment corresponds to the version of the cart-pole problem described by Emi Kennedy and Tran
 
     Observation: 
-        Type: Box(4)
+        Type: Box(5)
         Num	Observation                 Min                         Max
-        0	Cart Position             -4.8                          4.8
+        0	Cart Position             -0.25                         0.25
         1	Cart Velocity             -Inf                          Inf
-        2	Pole Angle                -24 deg (-0.418 rad)          24 deg (0.418 rad)
-        3	Pole Velocity At Tip      -Inf                          Inf
+        2	Cos(Pole Angle)           cos(-2pi)                     cos(2pi)
+        3   Sin(Pole Angle)           sin(-2pi)                     sin(2pi)
+        4	Pole Velocity At Tip      -Inf                          Inf
         
     Actions:
         Type: Box(1)
@@ -51,17 +52,17 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         it depends on the angle the pole is pointing. This is because the center of gravity of the pole increases the amount of energy needed to move the cart underneath it
 
     Reward:
-        Reward is 1 for every step taken, including the termination step
+        Reward is LQR for every step taken, including the termination step
 
     Starting State:
         All observations are assigned a uniform random value in [-0.05..0.05]
 
     Episode Termination:
-        Pole Angle is more than 90 degrees #12
-        Cart Position is more than 2.4 (center of the cart reaches the edge of the display)
-        Episode length is greater than 200
+        
+        Cart Position is more than 0.25 (center of the cart reaches the edge of the display)
+        Episode length is greater than (4 min * 60 seconds per min / 0.01 s time interval) = 24000 steps
         Solved Requirements
-        Considered solved when the average reward is greater than or equal to 195.0 over 100 consecutive trials.
+        Considered solved when the average reward is greater than or equal to 0 over 100 consecutive trials.
     """
     
     metadata = {
@@ -382,7 +383,8 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.steps_beyond_terminated = None
 
         x, x_dot, theta, theta_dot = self.state
-        obs = np.array( (np.sin(theta), np.cos(theta), theta_dot, x, x_dot), dtype=np.float32).flatten() # I think (?) might need rotation
+        # changed obs to be consistent as before in step
+        obs = np.array( (x, x_dot, np.cos(theta), np.sin(theta), theta_dot), dtype=np.float32).flatten() 
         # to go from observation (obs) angles to state space angle, need the following transformation (rotate the coordinate by pi/2):
         # state_angle = math.atan2(obs_cosangle, -obs_sinangle) - pi/2
 
