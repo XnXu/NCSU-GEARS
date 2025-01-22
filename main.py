@@ -55,7 +55,7 @@ gym.register(
 # Create a vectorized environment with rendering enabled
 env = DummyVecEnv([lambda: gym.make('CartPoleSwingUp', render_mode='human')])
 
-# Load or initialize the DDPG model
+# Load or initialize the TD3 model
 if load:
     print("Loading the pre-trained model...")
     model = TD3.load(path=load_path, env=env)
@@ -66,11 +66,11 @@ else:
         sigma=0.1 * np.ones(env.action_space.shape)
     )
 
-    # Initialize a new DDPG model with a custom neural network architecture
-    model = DDPG(
+    # Initialize a new TD3 model with a custom neural network architecture
+    model = TD3(
         'MlpPolicy',
         env,
-        policy_kwargs=dict(net_arch=[36, 48, 16]),
+        policy_kwargs=dict(net_arch=[128, 256, 32]),
         action_noise=action_noise
     )
 
