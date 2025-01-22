@@ -173,21 +173,21 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         >>> env.reset(seed=123, options={"low": 0, "high": 1})
         (array([0.6823519 , 0.05382102, 0.22035988, 0.18437181], dtype=float32), {})
         """
-    
+
     def RHS(self, y, force):
 
         assert self.state is not None, "Call reset before using step method."
         # x, theta, x_dot, theta_dot = self.state
         # to be consistent with native CartPole state = x, x_dot, theta, theta_dot
         x, x_dot, theta, theta_dot = self.state
-        
+
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
 
         # denominator used in a bunch of stuff
-        d = 4 * self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + 4 * self.Jm * self.Kg**2         
+        d = 4 * self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + 4 * self.Jm * self.Kg**2
         y = self.state
-        
+
         xacc = ((-4 * (self.Rm * self.r_mp**2 * self.Beq + self.Kg**2 * self.Kt * self.Km)) / (self.Rm *(d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * x_dot + ((-3 * self.Bp * self.r_mp**2 * costheta) / (self.length * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * theta_dot + ((-4 * self.masspole * self.length * self.r_mp**2 * sintheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * theta_dot**2 + ((3 * self.masspole * self.gravity * self.r_mp**2 * costheta * sintheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) + (4 * self.r_mp * self.Kg * self.Kt) / (self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * force
 
         thetaacc = ((-3 * (self.Rm * self.r_mp**2 * self.Beq + self.Kg**2 * self.Kt * self.Km) * costheta) / (self.length * self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * x_dot + ((-3 * (self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + self.Jm * self.Kg**2) * self.Bp) / (self.masspole * self.length**2 * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * theta_dot + ((-3 * self.masspole * self.r_mp**2 * sintheta * costheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * theta_dot**2 + ((3 * (self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + self.Jm * self.Kg**2) * self.gravity * sintheta) / (self.length * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) + (3 * self.r_mp * self.Kg * self.Kt * costheta) / (self.length * self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * force
@@ -204,14 +204,14 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         # x, theta, x_dot, theta_dot = self.state
         # to be consistent with native CartPole state = x, x_dot, theta, theta_dot
         x, x_dot, theta, theta_dot = self.state
-        
+
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
 
         # denominator used in a bunch of stuff
-        d = 4 * self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + 4 * self.Jm * self.Kg**2         
+        d = 4 * self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + 4 * self.Jm * self.Kg**2
 
-        
+
         xacc = ((-4 * (self.Rm * self.r_mp**2 * self.Beq + self.Kg**2 * self.Kt * self.Km)) / (self.Rm *(d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * x_dot + ((-3 * self.Bp * self.r_mp**2 * costheta) / (self.length * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * theta_dot + ((-4 * self.masspole * self.length * self.r_mp**2 * sintheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * theta_dot**2 + ((3 * self.masspole * self.gravity * self.r_mp**2 * costheta * sintheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) + (4 * self.r_mp * self.Kg * self.Kt) / (self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * force
 
         thetaacc = ((-3 * (self.Rm * self.r_mp**2 * self.Beq + self.Kg**2 * self.Kt * self.Km) * costheta) / (self.length * self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * x_dot + ((-3 * (self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + self.Jm * self.Kg**2) * self.Bp) / (self.masspole * self.length**2 * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * theta_dot + ((-3 * self.masspole * self.r_mp**2 * sintheta * costheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * theta_dot**2 + ((3 * (self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + self.Jm * self.Kg**2) * self.gravity * sintheta) / (self.length * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) + (3 * self.r_mp * self.Kg * self.Kt * costheta) / (self.length * self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * force
@@ -236,29 +236,29 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             k4 = self.RHS(y + self.tau * k3, force = force)
             y = y + self.tau/6 * (k1 + 2 * k2 + 2 * k3 + k4)
             x, x_dot, theta, theta_dot = y
-        
+
         # self.state = (x, x_dot, theta, theta_dot)
         return np.array( (x, x_dot,theta, theta_dot), dtype = np.float32).flatten()
- 
+
     def stepSwingUp(self, force):
         # assert self.action_space.contains(
         #     0.1 * force
         # ), f"{force!r} ({type(force)}) invalid"
         # Currently same as stepPhysics
         # Need to modify??
-        
+
         assert self.state is not None, "Call reset before using step method."
         # x, theta, x_dot, theta_dot = self.state
         # to be consistent with native CartPole state = x, x_dot, theta, theta_dot
         x, x_dot, theta, theta_dot = self.state
-        
+
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
         theta = math.atan(sintheta/costheta)
         # denominator used in a bunch of stuff
-        d = 4 * self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + 4 * self.Jm * self.Kg**2         
+        d = 4 * self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + 4 * self.Jm * self.Kg**2
 
-        
+
         xacc = ((-4 * (self.Rm * self.r_mp**2 * self.Beq + self.Kg**2 * self.Kt * self.Km)) / (self.Rm *(d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * x_dot + ((-3 * self.Bp * self.r_mp**2 * costheta) / (self.length * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * theta_dot + ((-4 * self.masspole * self.length * self.r_mp**2 * sintheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * theta_dot**2 + ((3 * self.masspole * self.gravity * self.r_mp**2 * costheta * sintheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) + (4 * self.r_mp * self.Kg * self.Kt) / (self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * force
 
         thetaacc = ((-3 * (self.Rm * self.r_mp**2 * self.Beq + self.Kg**2 * self.Kt * self.Km) * costheta) / (self.length * self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * x_dot + ((-3 * (self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + self.Jm * self.Kg**2) * self.Bp) / (self.masspole * self.length**2 * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * theta_dot + ((-3 * self.masspole * self.r_mp**2 * sintheta * costheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * theta_dot**2 + ((3 * (self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + self.Jm * self.Kg**2) * self.gravity * sintheta) / (self.length * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) + (3 * self.r_mp * self.Kg * self.Kt * costheta) / (self.length * self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * force
@@ -268,7 +268,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             x_dot = x_dot + self.tau * xacc
             theta = theta + self.tau * theta_dot
             theta_dot = theta_dot + self.tau * thetaacc
-        
+
         if self.kinematics_integrator == "semi-euler":
             x_dot = x_dot + self.tau * xacc
             x = x + self.tau * x_dot
@@ -284,7 +284,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             k4 = self.RHS(y + self.tau * k3, force = force)
             y = y + self.tau/6 * (k1 + 2 * k2 + 2 * k3 + k4)
             x, x_dot, theta, theta_dot = y
-        
+
         # self.state = (x, x_dot, theta, theta_dot)
         return np.array( (x, x_dot,theta, theta_dot), dtype = np.float32).flatten()
 
@@ -295,7 +295,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         B = 0
         if abs(x) > x_bound:
             B = 1
-        reward = -0.1 * (5 * (theta + math.pi) ** 2 + x ** 2 + 0.05 * self.previous_force ** 2) - 100 * B
+        reward = -0.1 * (5 * theta** 2 + x** 2 + 0.05 * self.previous_force** 2) - 100 * B
         # Reward function
 
         # Apply off-track penalty and termination
@@ -306,14 +306,14 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         return reward
         #(GEARS (?))
-        
+
     def step(self, action):
         # !!this block may contain bugs!!
         # Cast action to float to strip np trappings
         action = np.clip( self.max_action * action, -self.max_action, self.max_action)
         force = self.force_mag * float(action)
         # force = float(np.clip( self.max_action * action, -self.max_action, self.max_action))
-        
+
         # Nikki modified the following force from continuous_mountain_car
         # force = min(max(action[0], -self.max_action), self.max_action) * self.max_action
         self.state = self.stepSwingUp(force)
@@ -333,7 +333,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         # reward -= math.pow(action[0], 2) * 0.1
         # Nikki changed from above to below according  to:
         # Matlab Train DDPG to swing up and balance pole
-        # 
+        #
 
         obs = np.array( (x, x_dot, np.cos(theta), np.sin(theta), theta_dot), dtype=np.float32).flatten()
 
@@ -366,27 +366,27 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             options, -0.08, 0.08 #NX changed from above
         )  # default high
         self.state = np.array(
-          self.np_random.uniform(low=low, high=high, size=(4,)) 
+          self.np_random.uniform(low=low, high=high, size=(4,))
           - [0,0,math.pi,0] ).flatten()
         # self.state = np.array(
-        #         [ self.np_random.uniform(low = -0.08, high = 0.08), 
-        #           0 , 
-        #           math.pi, 
+        #         [ self.np_random.uniform(low = -0.08, high = 0.08),
+        #           0 ,
+        #           math.pi,
         #          0 ]
         #         )
         self.steps_beyond_terminated = None
-        
+
         x, x_dot, theta, theta_dot = self.state
         obs = np.array( (np.sin(theta), np.cos(theta), theta_dot, x, x_dot), dtype=np.float32).flatten() # I think (?) might need rotation
         # to go from observation (obs) angles to state space angle, need the following transformation (rotate the coordinate by pi/2):
         # state_angle = math.atan2(obs_cosangle, -obs_sinangle) - pi/2
-        
+
         if self.render_mode == "human":
             self.render()
         return np.array(obs, dtype=np.float32), {}
 
-    
-   
+
+
 
     ## this render def is copied from CartPole and never changed...
 
@@ -496,265 +496,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             pygame.quit()
             self.isopen = False
 
-    
+
 
 # below is copied without modification from native cartpole
 
-class myCartPoleFVectorEnv(VectorEnv):
-    metadata = {
-        "render_modes": ["human", "rgb_array"],
-        "render_fps": 50,
-    }
-
-    def __init__(
-        self,
-        num_envs: int = 2,
-        max_episode_steps: int = 500,
-        render_mode: Optional[str] = None,
-    ):
-        self.num_envs = num_envs
-        self.max_episode_steps = max_episode_steps
-        self.render_mode = render_mode
-
-        self.gravity = 9.8
-        self.masscart = 1.0
-        self.masspole = 0.1
-        self.total_mass = self.masspole + self.masscart
-        self.length = 0.5  # actually half the pole's length
-        self.polemass_length = self.masspole * self.length
-        self.force_mag = 10.0
-        self.tau = 0.02  # seconds between state updates
-        self.kinematics_integrator = "euler"
-
-        self.steps = np.zeros(num_envs, dtype=np.int32)
-
-        # Angle at which to fail the episode
-        self.theta_threshold_radians = 12 * 2 * math.pi / 360
-        self.x_threshold = 2.4
-
-        # Angle limit set to 2 * theta_threshold_radians so failing observation
-        # is still within bounds.
-        high = np.array(
-            [
-                self.x_threshold * 2,
-                np.finfo(np.float32).max,
-                self.theta_threshold_radians * 2,
-                np.finfo(np.float32).max,
-            ],
-            dtype=np.float32,
-        )
-
-        self.low = -0.05
-        self.high = 0.05
-
-        self.single_action_space = spaces.Discrete(2)
-        self.action_space = batch_space(self.single_action_space, num_envs)
-        self.single_observation_space = spaces.Box(-high, high, dtype=np.float32)
-        self.observation_space = batch_space(self.single_observation_space, num_envs)
-
-        self.screen_width = 600
-        self.screen_height = 400
-        self.screens = None
-        self.clocks = None
-        self.isopen = True
-        self.state = None
-
-        self.steps_beyond_terminated = None
-
-    def step(
-        self, action: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, dict]:
-        assert self.action_space.contains(
-            action
-        ), f"{action!r} ({type(action)}) invalid"
-        assert self.state is not None, "Call reset before using step method."
-
-        x, x_dot, theta, theta_dot = self.state
-        force = np.sign(action - 0.5) * self.force_mag
-        costheta = np.cos(theta)
-        sintheta = np.sin(theta)
-
-        # For the interested reader:
-        # https://coneural.org/florian/papers/05_cart_pole.pdf
-        temp = (
-            force + self.polemass_length * theta_dot**2 * sintheta
-        ) / self.total_mass
-        thetaacc = (self.gravity * sintheta - costheta * temp) / (
-            self.length * (4.0 / 3.0 - self.masspole * costheta**2 / self.total_mass)
-        )
-        xacc = temp - self.polemass_length * thetaacc * costheta / self.total_mass
-
-        if self.kinematics_integrator == "euler":
-            x = x + self.tau * x_dot
-            x_dot = x_dot + self.tau * xacc
-            theta = theta + self.tau * theta_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-        else:  # semi-implicit euler
-            x_dot = x_dot + self.tau * xacc
-            x = x + self.tau * x_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-            theta = theta + self.tau * theta_dot
-
-        self.state = np.stack((x, x_dot, theta, theta_dot))
-
-        terminated: np.ndarray = (
-            (x < -self.x_threshold)
-            | (x > self.x_threshold)
-            | (theta < -self.theta_threshold_radians)
-            | (theta > self.theta_threshold_radians)
-        )
-
-        self.steps += 1
-
-        truncated = self.steps >= self.max_episode_steps
-
-        done = terminated | truncated
-
-        if any(done):
-            # This code was generated by copilot, need to check if it works
-            self.state[:, done] = self.np_random.uniform(
-                low=self.low, high=self.high, size=(4, done.sum())
-            ).astype(np.float32)
-            self.steps[done] = 0
-
-        reward = np.ones_like(terminated, dtype=np.float32)
-
-        if self.render_mode == "human":
-            self.render()
-
-        return self.state.T, reward, terminated, truncated, {}
-    def reset(
-        self,
-        *,
-        seed: Optional[int] = None,
-        options: Optional[dict] = None,
-    ):
-        super().reset(seed=seed)
-        # Note that if you use custom reset bounds, it may lead to out-of-bound
-        # state/observations.
-        self.low, self.high = utils.maybe_parse_reset_bounds(
-            options, -0.05, 0.05  # default low
-        )  # default high
-        self.state = self.np_random.uniform(
-            low=self.low, high=self.high, size=(4, self.num_envs)
-        ).astype(np.float32)
-        self.steps_beyond_terminated = None
-
-        if self.render_mode == "human":
-            self.render()
-        return self.state.T, {}
-
-    def render(self):
-        if self.render_mode is None:
-            assert self.spec is not None
-            gym.logger.warn(
-                "You are calling render method without specifying any render mode. "
-                "You can specify the render_mode at initialization, "
-                f'e.g. gym("{self.spec.id}", render_mode="rgb_array")'
-            )
-            return
-
-        try:
-            import pygame
-            from pygame import gfxdraw
-        except ImportError:
-            raise DependencyNotInstalled(
-                "pygame is not installed, run `pip install gymnasium[classic_control]`"
-            )
-
-        if self.screens is None:
-            pygame.init()
-            if self.render_mode == "human":
-                pygame.display.init()
-                self.screens = [
-                    pygame.display.set_mode((self.screen_width, self.screen_height))
-                    for _ in range(self.num_envs)
-                ]
-            else:  # mode == "rgb_array"
-                self.screens = [
-                    pygame.Surface((self.screen_width, self.screen_height))
-                    for _ in range(self.num_envs)
-                ]
-        if self.clocks is None:
-            self.clock = [pygame.time.Clock() for _ in range(self.num_envs)]
-
-        world_width = self.x_threshold * 2
-        scale = self.screen_width / world_width
-        polewidth = 10.0
-        polelen = scale * (2 * self.length)
-        cartwidth = 50.0
-        cartheight = 30.0
-
-        if self.state is None:
-            return None
-
-        for state, screen, clock in zip(self.state, self.screens, self.clocks):
-            x = self.state.T
-
-            self.surf = pygame.Surface((self.screen_width, self.screen_height))
-            self.surf.fill((255, 255, 255))
-
-            l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
-            axleoffset = cartheight / 4.0
-            cartx = x[0] * scale + self.screen_width / 2.0  # MIDDLE OF CART
-            carty = 100  # TOP OF CART
-            cart_coords = [(l, b), (l, t), (r, t), (r, b)]
-            cart_coords = [(c[0] + cartx, c[1] + carty) for c in cart_coords]
-            gfxdraw.aapolygon(self.surf, cart_coords, (0, 0, 0))
-            gfxdraw.filled_polygon(self.surf, cart_coords, (0, 0, 0))
-
-            l, r, t, b = (
-                -polewidth / 2,
-                polewidth / 2,
-                polelen - polewidth / 2,
-                -polewidth / 2,
-            )
-
-            pole_coords = []
-            for coord in [(l, b), (l, t), (r, t), (r, b)]:
-                coord = pygame.math.Vector2(coord).rotate_rad(-x[2])
-                coord = (coord[0] + cartx, coord[1] + carty + axleoffset)
-                pole_coords.append(coord)
-            gfxdraw.aapolygon(self.surf, pole_coords, (202, 152, 101))
-            gfxdraw.filled_polygon(self.surf, pole_coords, (202, 152, 101))
-
-            gfxdraw.aacircle(
-                self.surf,
-                int(cartx),
-                int(carty + axleoffset),
-                int(polewidth / 2),
-                (129, 132, 203),
-            )
-            gfxdraw.filled_circle(
-                self.surf,
-                int(cartx),
-                int(carty + axleoffset),
-                int(polewidth / 2),
-                (129, 132, 203),
-            )
-
-            gfxdraw.hline(self.surf, 0, self.screen_width, carty, (0, 0, 0))
-
-            self.surf = pygame.transform.flip(self.surf, False, True)
-            screen.blit(self.surf, (0, 0))
-
-        if self.render_mode == "human":
-            pygame.event.pump()
-            [clock.tick(self.metadata["render_fps"]) for clock in self.clocks]
-            pygame.display.flip()
-
-        elif self.render_mode == "rgb_array":
-            return [
-                np.transpose(
-                    np.array(pygame.surfarray.pixels3d(screen)), axes=(1, 0, 2)
-                )
-                for screen in self.screens
-            ]
-
-    def close(self):
-        if self.screens is not None:
-            import pygame
-
-            pygame.display.quit()
-            pygame.quit()
-            self.isopen = False
