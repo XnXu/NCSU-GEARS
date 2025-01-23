@@ -27,51 +27,52 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 # class myCartPoleEnvF(gym.Env):
     """
     Description:
-        A pole is attached by an un-actuated joint to a cart, which moves along a frictionless track. The pendulum starts upright, and the goal is to prevent it from falling over by increasing and reducing the cart's velocity.
+        A pole is attached by an un-actuated joint to a cart
 
     Source:
-        This environment corresponds to the version of the cart-pole problem described by Barto, Sutton, and Anderson
+        This environment corresponds to the version of the cart-pole problem described by Emi Kennedy and Tran
 
-    Observation: 
-        Type: Box(4)
+    Observation:
+        Type: Box(5)
         Num	Observation                 Min                         Max
-        0	Cart Position             -4.8                          4.8
+        0	Cart Position             -0.25                         0.25
         1	Cart Velocity             -Inf                          Inf
-        2	Pole Angle                -24 deg (-0.418 rad)          24 deg (0.418 rad)
-        3	Pole Velocity At Tip      -Inf                          Inf
-        
+        2	Cos(Pole Angle)           cos(-2pi)                     cos(2pi)
+        3   Sin(Pole Angle)           sin(-2pi)                     sin(2pi)
+        4	Pole Velocity At Tip      -Inf                          Inf
+
     Actions:
         Type: Box(1)
         Num	Observation                 Min         Max
-        0	Voltage to motor            -10          10     
+        0	Voltage to motor            -10          10
 
         #so, input from -1 to 1, then multiplied by max_volt
-        
-        Note: The amount the velocity that is reduced or increased is not fixed; 
+
+        Note: The amount the velocity that is reduced or increased is not fixed;
         it depends on the angle the pole is pointing. This is because the center of gravity of the pole increases the amount of energy needed to move the cart underneath it
 
     Reward:
-        Reward is 1 for every step taken, including the termination step
+        Reward is LQR for every step taken, including the termination step
 
     Starting State:
         All observations are assigned a uniform random value in [-0.05..0.05]
 
     Episode Termination:
-        Pole Angle is more than 90 degrees #12
-        Cart Position is more than 2.4 (center of the cart reaches the edge of the display)
-        Episode length is greater than 200
+
+        Cart Position is more than 0.25 (center of the cart reaches the edge of the display)
+        Episode length is greater than (4 min * 60 seconds per min / 0.01 s time interval) = 24000 steps
         Solved Requirements
-        Considered solved when the average reward is greater than or equal to 195.0 over 100 consecutive trials.
+        Considered solved when the average reward is greater than or equal to 0 over 100 consecutive trials.
     """
-    
+
     metadata = {
         "render_modes": ["human", "rgb_array"],
         "render_fps": 50,
     }
 
     def __init__(self, render_mode: Optional[str] = None):
-        self.fps = 100 # Nikki changed from 50 to 100 
-        
+        self.fps = 100 # Nikki changed from 50 to 100
+
         self.gravity = 9.81
         self.masscart = 0.57+0.37
         self.masspole = 0.230
@@ -97,9 +98,9 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         # self.kinematics_integrator = "semi-implicit-euler" # newly added from native CartPole
         self.kinematics_integrator = "RK4"
-        
+
         # copied the following from mountain_car
-        
+
         """
         self.min_action = -1.0
         self.max_action = 1.0
@@ -111,8 +112,8 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         )
         self.goal_velocity = goal_velocity
         self.power = 0.0015
-        """    
-        
+        """
+
 
         # Angle at which to fail the episode
         # self.theta_threshold_radians = 12  * math.pi / 180 # according to Dylan's thesis
@@ -133,7 +134,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
                 ],
                 dtype = np.float32)
         # action is sampled uniformly from [-1,1]
-        self.max_action = 1.0  
+        self.max_action = 1.0
         # self.action_space = spaces.Box(low = -self.max_action, high = self.max_action)
         # self.observation_space = spaces.Box(low = -high, high = high)
 
@@ -141,7 +142,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
                 low=-self.max_action, high=self.max_action, shape=(1,), dtype=np.float32
                 ) # \in \mathbb{R}^1 bounded between -1 to 1
         self.observation_space = spaces.Box(-high, high, dtype=np.float32) # in \mathbb{R}^5
-        
+
         #from new native CartPole
         self.render_mode = render_mode
 
@@ -382,7 +383,8 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.steps_beyond_terminated = None
 
         x, x_dot, theta, theta_dot = self.state
-        obs = np.array( (np.sin(theta), np.cos(theta), theta_dot, x, x_dot), dtype=np.float32).flatten() # I think (?) might need rotation
+        # changed obs to be consistent as before in step
+        obs = np.array( (x, x_dot, np.cos(theta), np.sin(theta), theta_dot), dtype=np.float32).flatten()
         # to go from observation (obs) angles to state space angle, need the following transformation (rotate the coordinate by pi/2):
         # state_angle = math.atan2(obs_cosangle, -obs_sinangle) - pi/2
 
@@ -504,4 +506,3 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
 
 # below is copied without modification from native cartpole
-
