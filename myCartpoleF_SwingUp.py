@@ -255,7 +255,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         costheta = math.cos(theta)
         sintheta = math.sin(theta)
-        theta = math.atan(sintheta/costheta)
+        # theta = math.atan(sintheta/costheta) # nikki_: this isn't corrent, atan maps to -pi/2 to pi/2 but our angle can be -pi to pi
         # denominator used in a bunch of stuff
         d = 4 * self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + 4 * self.Jm * self.Kg**2
 
@@ -295,7 +295,8 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         cos = np.cos(theta)
         sin = np.sin(theta)
 
-        theta = np.arctan2(sin, cos)
+        # theta = np.arctan2(sin, cos) nikki_: this coordinate is different
+        theta = np.arctan2(cos, -sin) - math.pi / 2
 
         x_bound = 0.23
         B = 0
@@ -354,6 +355,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         terminated = False
         return obs, reward, terminated, off_track, {}
                  # quad_reward, terminated, False, {}
+                 # nikki_: should the step also outputs self.state?
 
 
 
@@ -371,15 +373,15 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             # options, -0.05, 0.05  # default low
             options, -0.08, 0.08 #NX changed from above
         )  # default high
-        self.state = np.array(
-          self.np_random.uniform(low=low, high=high, size=(4,))
-          - [0,0,math.pi,0] ).flatten()
         # self.state = np.array(
-        #         [ self.np_random.uniform(low = -0.08, high = 0.08),
-        #           0 ,
-        #           math.pi,
-        #          0 ]
-        #         )
+        #   self.np_random.uniform(low=low, high=high, size=(4,))
+        #   - [0,0,math.pi,0] ).flatten()
+        self.state = np.array(
+                [ self.np_random.uniform(low = -0.05, high = 0.05),
+                  0 ,
+                  self.np_random.uniform(low = -0.001, high = 0.001) - math.pi,
+                  0 ]
+                ).flatten()
         self.steps_beyond_terminated = None
 
         x, x_dot, theta, theta_dot = self.state
