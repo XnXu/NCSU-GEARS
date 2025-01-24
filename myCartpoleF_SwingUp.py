@@ -297,8 +297,8 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         cos = np.cos(theta)
         sin = np.sin(theta)
 
-        # theta = np.arctan2(sin, cos) nikki_: this coordinate is different
-        theta = np.arctan2(cos, -sin) - math.pi / 2
+        theta = np.arctan2(sin, cos) # nikki_: this coordinate is different
+        # theta = np.arctan2(cos, -sin) - math.pi / 2
 
         x_bound = 0.23
         B = 0
