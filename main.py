@@ -4,7 +4,7 @@ from stable_baselines3 import DDPG, TD3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.vec_env import DummyVecEnv
 import numpy as np
-import math
+
 # Setting up the argument parser for command-line inputs
 parser = argparse.ArgumentParser()
 
@@ -18,7 +18,7 @@ parser.add_argument('--train', type=bool, default=False, help='Train the model (
 parser.add_argument('--load', type=bool, default=True, help='Load a pre-trained model (True/False)')
 
 #Path of the pre-trained model
-parser.add_argument('--load_path', type=str, default='model/td3_cartpole_swingup', help="Path to load pre-trained model")
+parser.add_argument('--load_path', type=str, default='model/td3/td3_swingup_balance', help="Path to load pre-trained model")
 
 # Path to save the trained model
 parser.add_argument('--save_path', default=None, help='Path to save the model (set to None to skip saving)')
@@ -81,17 +81,22 @@ if train_timesteps:
 
 # Evaluate the model
 print('--------------Evaluating the Model--------------')
-for episode in range(eval_episodes):
-    obs = env.reset()  # Reset the environment at the start of each episode
-    done = False
-    total_reward = 0  # Accumulate rewards for this episode
 
+for episode in range(eval_episodes):
+    # Reset the environment at the start of each episode
+    obs = env.reset()
+    done = False
+    # Accumulate rewards for this episode
+    total_reward = 0
     while not done:
-        action, _ = model.predict(obs, deterministic=False)  # Predict the action
-        obs, reward, done, info = env.step(action)  # Take the action and observe the result
-        #x, x_dot, theta, theta_dot = state
-        total_reward += reward  # Add the reward to the total
-        env.render()  # Render the environment
+        # Predict the action
+        action, _ = model.predict(obs, deterministic=False)
+        # Take the action and observe the result
+        obs, reward, done, info = env.step(action)
+        # Add the reward to the total
+        total_reward += reward
+        # Render the environment
+        env.render()
     print(f'Episode: {episode + 1} | Total Reward: {total_reward}')
 
 # Save the trained model if a save path is specified
