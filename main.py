@@ -4,6 +4,7 @@ from stable_baselines3 import DDPG, TD3
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.vec_env import DummyVecEnv
 import numpy as np
+from stable_baselines3.common.utils import set_random_seed
 
 # Setting up the argument parser for command-line inputs
 parser = argparse.ArgumentParser()
@@ -11,17 +12,12 @@ parser = argparse.ArgumentParser()
 # Device to run the code on (CPU or GPU)
 parser.add_argument('--device', type=str, default='cpu', help='Specify device: cpu or cuda')
 
-# Whether to train the model
-parser.add_argument('--train', type=bool, default=False, help='Train the model (True/False)')
-
 # Whether to load a pre-trained model
-parser.add_argument('--load', type=bool, default=True, help='Load a pre-trained model (True/False)')
+parser.add_argument('--load', type=str, default='True', help='Load a pre-trained model (True/False)')
 
-#Path of the pre-trained model
-parser.add_argument('--load_path', type=str, default='model/td3/td3_swingup_balance', help="Path to load pre-trained model")
 
 # Path to save the trained model
-parser.add_argument('--save_path', default=None, help='Path to save the model (set to None to skip saving)')
+parser.add_argument('--save', default=True, help='Save the model or not')
 
 # Number of episodes for evaluation
 parser.add_argument('--eval_episodes', type=int, default=10, help='Number of episodes for evaluation')
@@ -32,17 +28,22 @@ parser.add_argument('--train_timesteps', type=int, default=None, help='Number of
 # Maximum steps allowed per episode
 parser.add_argument('--max_episode_step', type=int, default=None, help='Maximum steps allowed per episode.')
 
+parser.add_argument('--seed', type=int, default=4, help='Random seed to guarantee reproducibility')
+#seed 3
 # Parse the input arguments
 args = parser.parse_args()
 
 # Extract parsed arguments for convenience
 device = args.device
+
 load = args.load
 train_timesteps = args.train_timesteps
 eval_episodes = args.eval_episodes
 max_episode_step = args.max_episode_step
-load_path = args.load_path
-save_path = args.save_path
+save = args.save
+seed = args.seed
+
+set_random_seed(seed)
 
 # Register the custom CartPoleSwingUp environment with Gym
 gym.register(
@@ -56,9 +57,11 @@ gym.register(
 env = DummyVecEnv([lambda: gym.make('CartPoleSwingUp', render_mode='human')])
 
 # Load or initialize the TD3 model
-if load:
+
+if load == 'True':
     print("Loading the pre-trained model...")
-    model = TD3.load(path=load_path, env=env)
+    model = TD3.load(path='model/td3/td3_swingup_balance', env=env)
+    model.load_replay_buffer("model/td3/td3_swingup_balance_replay_buffer")
 else:
     # Add noise to actions for exploration during training
     action_noise = NormalActionNoise(
@@ -75,34 +78,36 @@ else:
     )
 
 # Train the model if the user specifies a training duration
-if train_timesteps:
+if train_timesteps is not None:
     print('--------------Training the Model--------------')
     model.learn(total_timesteps=train_timesteps)
 
 # Evaluate the model
-print('--------------Evaluating the Model--------------')
 
-for episode in range(eval_episodes):
-    # Reset the environment at the start of each episode
-    obs = env.reset()
-    done = False
-    # Accumulate rewards for this episode
-    total_reward = 0
-    while not done:
-        # Predict the action
-        action, _ = model.predict(obs, deterministic=False)
-        # Take the action and observe the result
-        obs, reward, done, info = env.step(action)
-        # Add the reward to the total
-        total_reward += reward
-        # Render the environment
-        env.render()
-    print(f'Episode: {episode + 1} | Total Reward: {total_reward}')
+if eval_episodes is not None:
+    print('--------------Evaluating the Model--------------')
+    for episode in range(eval_episodes):
+        # Reset the environment at the start of each episode
+        obs = env.reset()
+        done = False
+        # Accumulate rewards for this episode
+        total_reward = 0
+        while not done:
+            # Predict the action
+            action, _ = model.predict(obs, deterministic=False)
+            # Take the action and observe the result
+            obs, reward, done, info = env.step(action)
+            # Add the reward to the total
+            total_reward += reward
+            # Render the environment
+            env.render()
+        print(f'Episode: {episode + 1} | Total Reward: {total_reward}')
 
 # Save the trained model if a save path is specified
-if save_path:
-    print(f"Saving the model to {save_path}...")
-    model.save(save_path)
+if save:
+    print(f"Saving the model")
+    model.save('model/td3/td3_swingup_balance')
+    model.save_replay_buffer("model/td3/td3_swingup_balance_replay_buffer")
 
 # Close the environment
 env.close()
