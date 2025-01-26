@@ -82,13 +82,13 @@ if train_timesteps:
 # Evaluate the model
 print('--------------Evaluating the Model--------------')
 for episode in range(eval_episodes):
-    state = env.reset()  # Reset the environment at the start of each episode
+    obs = env.reset()  # Reset the environment at the start of each episode
     done = False
     total_reward = 0  # Accumulate rewards for this episode
 
     while not done:
-        action, _ = model.predict(state, deterministic=False)  # Predict the action
-        state, reward, done, info = env.step(action)  # Take the action and observe the result
+        action, _ = model.predict(obs, deterministic=False)  # Predict the action
+        obs, reward, done, info = env.step(action)  # Take the action and observe the result
         #x, x_dot, theta, theta_dot = state
         total_reward += reward  # Add the reward to the total
         env.render()  # Render the environment
