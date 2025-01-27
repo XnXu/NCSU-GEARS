@@ -18,13 +18,6 @@ from gymnasium.vector.utils import batch_space
 
 class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
-# import math
-# import gym
-# from gym import spaces, logger
-# from gym.utils import seeding
-# import numpy as np
-
-# class myCartPoleEnvF(gym.Env):
     """
     Description:
         A pole is attached by an un-actuated joint to a cart
@@ -297,14 +290,17 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         cos = np.cos(theta)
         sin = np.sin(theta)
 
-        theta = np.arctan2(sin, cos) # nikki_: this coordinate is different
-        # theta = np.arctan2(cos, -sin) - math.pi / 2
+        # theta = np.arctan2(sin, cos) nikki_: this coordinate is different
+        #theta = np.arctan2(cos, -sin) - math.pi / 2
+        theta = np.arctan2(sin, cos)
 
+        #if abs(theta) < 0.1:
+        #    print(theta)
         x_bound = 0.23
         B = 0
         if abs(x) > x_bound:
             B = 1
-        reward = -0.1 * (5 * theta**2 + x**2 + 0.05 * self.previous_force**2) - 100 * B
+        reward = -0.1 * (5 * theta**2 + 5 * (10 * x)**2 + 0.05 * self.previous_force**2) - 100 * B
         # Reward function
 
         # Apply off-track penalty and termination
@@ -389,8 +385,9 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         x, x_dot, theta, theta_dot = self.state
         # changed obs to be consistent as before in step
 
-        obs = np.array( (x, x_dot, np.cos(theta), np.sin(theta), theta_dot), dtype=np.float32).flatten() 
-
+        obs = np.array( (x, x_dot, np.cos(theta), np.sin(theta), theta_dot), dtype=np.float32).flatten()
+        #obs = np.array((np.sin(theta), np.cos(theta), theta_dot, x, x_dot),
+        #              dtype=np.float32).flatten()
         # to go from observation (obs) angles to state space angle, need the following transformation (rotate the coordinate by pi/2):
         # state_angle = math.atan2(obs_cosangle, -obs_sinangle) - pi/2
 
