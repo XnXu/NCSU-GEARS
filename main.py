@@ -63,8 +63,8 @@ env = DummyVecEnv([lambda: gym.make('CartPoleSwingUp', render_mode='human')])
 
 if load == 'True':
     print("Loading the pre-trained model...")
-    model = TD3.load(path='model/td3/td3_swingup_balance', env=env)
-    model.load_replay_buffer("model/td3/td3_swingup_balance_replay_buffer")
+    model = TD3.load(path='model/td3_smaller_force/td3_swingup_balance', env=env)
+    model.load_replay_buffer("model/td3_smaller_force/td3_swingup_balance_replay_buffer")
 else:
     # Add noise to actions for exploration during training
     action_noise = NormalActionNoise(
