@@ -73,28 +73,10 @@ else:
     )
 
     # Initialize a new TD3 model with a custom neural network architecture
-    class ScaledTD3Policy(TD3Policy):
-        def __init__(self, *args, **kwargs):
-            super(ScaledTD3Policy, self).__init__(*args, **kwargs)
-
-        def forward(self, obs, deterministic=False):
-            # Get actions from the parent class (TD3Policy)
-            actions = super().forward(obs, deterministic)
-            # Scale the actions by (1 / pi)
-            scaled_actions = actions
-            return scaled_actions
-
-        def _predict(self, obs, deterministic=False):
-            # Get actions using the base TD3 policy
-            actions = super()._predict(obs, deterministic)
-            # Scale the actions by (1 / pi)
-            scaled_actions = actions
-            return scaled_actions
-
 
     # Create the TD3 model with the custom policy
     model = TD3(
-        ScaledTD3Policy,
+        TD3Policy,
         env,
         policy_kwargs=dict(net_arch=[256, 256, 32]),
         action_noise=action_noise
