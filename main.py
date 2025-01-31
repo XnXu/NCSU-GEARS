@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--device', type=str, default='cpu', help='Specify device: cpu or cuda')
 
 # Whether to load a pre-trained model
-parser.add_argument('--load', type=str, default='True', help='Load a pre-trained model (True/False)')
+parser.add_argument('--load', type=str, default='True', help='Load a pre-trained model (True/False)', choices=['True', 'False'])
 
 
 # Path to save the trained model
