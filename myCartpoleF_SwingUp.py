@@ -4,6 +4,7 @@ Copied from http://incompleteideas.net/sutton/book/code/pole.c
 permalink: https://perma.cc/C9ZM-652R
 """
 import math
+import torch
 from typing import Optional, Tuple, Union
 
 import numpy as np
@@ -300,7 +301,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         B = 0
         if abs(x) > x_bound:
             B = 1
-        reward = -0.1 * (5 * theta**2 + 5 * (10 * x)**2 + 0.05 * self.previous_force**2) - 100 * B
+        reward = -0.1 * (5 * theta**2 + x**2 + 0.5 * self.previous_force**2) - 100 * B
         # Reward function
 
         # Apply off-track penalty and termination
@@ -315,7 +316,6 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
     def step(self, action):
         # !!this block may contain bugs!!
         # Cast action to float to strip np trappings
-        action = np.clip( self.max_action * action, -self.max_action, self.max_action)
         force = self.force_mag * float(action)
         # force = float(np.clip( self.max_action * action, -self.max_action, self.max_action))
 
@@ -328,8 +328,6 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         off_track = bool(abs(x) > self.x_threshold)
 
         reward = self.reward(terminated, off_track)
-
-
         self.previous_force = force
         # Nikki copied the following reward from continuous_mountain_car
         # reward = 0.0
