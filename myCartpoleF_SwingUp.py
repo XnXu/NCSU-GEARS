@@ -301,7 +301,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         B = 0
         if abs(x) > x_bound:
             B = 1
-        reward = -0.1 * (5 * theta**2 + x**2 + 0.5 * self.previous_force**2) - 100 * B
+        reward = -0.1 * (5 * theta**2 + 0.5 * x**2 + 0.2 * x_dot**2 + 0.005 * self.previous_force**2) - 100 * B
         # Reward function
 
         # Apply off-track penalty and termination

@@ -136,8 +136,8 @@ if eval_episodes is not None:
 # Save the trained model if a save path is specified
 if save:
     print(f"Saving the model")
-    model.save('model/td3_smaller_force/td3_swingup_balance')
-    model.save_replay_buffer("model/td3_smaller_force/td3_swingup_balance_replay_buffer")
+    model.save('model/td3_nikki/td3_swingup_balance')
+    model.save_replay_buffer("model/td3_nikki/td3_swingup_balance_replay_buffer")
 
 # Close the environment
 env.close()
