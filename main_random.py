@@ -62,7 +62,7 @@ gym.register(
 )
 
 
-# Oarameters of environment as dict
+# Parameters of environment as dict
 # keys name of the parameters in env
 # items range of parameters to be uniformly chosen from
 params = {
@@ -84,12 +84,14 @@ class RandomizedEnv(gym.Wrapper):
         self.current_params = {
                 key: np.random.uniform(low, high) for key, (low, high) in self.param_ranges.items() 
         }
+        print(f"RandPars_set: {self.current_params}")
         for key, value in self.current_params.items():
             if hasattr(self.env.unwrapped, key):
                 setattr(self.env.unwrapped, key, value)
 
     def reset(self, **kwargs):
         self.set_params()
+        print(f"RandPars_after_reset: {self.current_params}")
         return self.env.reset(**kwargs)
 
 
@@ -109,6 +111,19 @@ def mod_make_env(env_id, param_dict):
 num_envs = 10
 
 envs = DummyVecEnv([mod_make_env('CartPoleSwingUpRandom', params) for _ in range(num_envs)])
+
+# Log env parameters
+# current_params = [env.env.env.current_params for env in envs.envs]
+# for env in env_parameters:
+print("\nRandomized Parameters per Environment:")
+for i, p in enumerate(current_params):
+    
+    print(f"Env {i+1}:")
+    print(p.items())
+    for key, value in p.items():
+        print(f" {key:<10}: {value:.2E}")
+    print("-"*20)
+
 
 # Load or initialize the TD3 model
 
@@ -133,19 +148,6 @@ else:
         action_noise=action_noise, 
         verbose=0
     )
-
-# Log env parameters
-current_params = [env.current_params for env in envs.envs]
-print(current_params)
-# for env in env_parameters:
-print("\nRandomized Parameters per Environment:")
-for i, p in enumerate(current_params):
-    
-    print(f"Env {i+1}:")
-    print(p.items())
-    for key, value in p.items():
-        print(f" {key:<10}: {value:.2E}")
-    print("-"*20)
 
 # Train the model if the user specifies a training duration
 if train_timesteps is not None:
