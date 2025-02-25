@@ -32,10 +32,10 @@ parser.add_argument('--load', type=str, default='True', help='Load a pre-trained
 parser.add_argument('--eval_episodes', type=int, default=10, help='Number of episodes for evaluation')
 
 # Maximum steps allowed per episode
-parser.add_argument('--max_episode_step', type=int, default=None, help='Maximum steps allowed per episode.')
+parser.add_argument('--max_episode_step', type=int, default=3000, help='Maximum steps allowed per episode.')
 
 # Standard deviation of additive Gaussian noise
-parser.add_argument('--noise_std', type=float, default=0.01, help='Additive noise standard deviation to obs and action')
+parser.add_argument('--noise_std', type=float, default=0.05, help='Additive noise standard deviation to obs and action')
 
 parser.add_argument('--seed', type=int, default=3, help='Random seed to guarantee reproducibility')
 #seed 3
@@ -105,11 +105,11 @@ env = DummyVecEnv([lambda: gym.make('CartPoleSwingUpRandom',render_mode='human')
 
 ## Add noise to observation
 
-def add_noise_obs(obs, noise_std = 0.01):
+def add_noise_obs(obs, noise_std = noise_std):
     return obs + np.random.normal(0, noise_std, size = obs.shape)
 
 ## Add noise to action
-def add_noise_action(action, noise_std = 0.01):
+def add_noise_action(action, noise_std = noise_std):
     return np.clip(action + np.random.normal(0, noise_std, size = action.shape), -1, 1) # clip to normalized action (-1,1) same as env
 
 
@@ -160,6 +160,8 @@ if eval_episodes is not None:
             total_reward += reward
             # Render the environment
             env.render()
+        
+        env.close()
         print(f'Episode: {episode + 1} | Total Reward: {total_reward}')
         fig, axes = plt.subplots(4, 1, figsize=(8, 12))  # 4 rows, 1 column
 
@@ -177,9 +179,5 @@ if eval_episodes is not None:
 
         plt.tight_layout()  # Adjusts layout to prevent overlapping labels
         plt.show()
-# Save the trained model if a save path is specified
        
-
-
-env.close()
-#DDPG PPD
+# env.close()

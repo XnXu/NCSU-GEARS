@@ -84,23 +84,23 @@ class RandomizedEnv(gym.Wrapper):
         self.current_params = {
                 key: np.random.uniform(low, high) for key, (low, high) in self.param_ranges.items() 
         }
-        print(f"RandPars_set: {self.current_params}")
+        # print(f"RandPars_set: {self.current_params}")
         for key, value in self.current_params.items():
             if hasattr(self.env.unwrapped, key):
                 setattr(self.env.unwrapped, key, value)
 
     def reset(self, **kwargs):
         self.set_params()
-        print(f"RandPars_after_reset: {self.current_params}")
+        # print(f"RandPars_after_reset: {self.current_params}")
         return self.env.reset(**kwargs)
 
 
 # Function to create env instance with randomized paramters from sensitivity analysis
-def mod_make_env(env_id, param_dict):
+def mod_make_env(env_id, param_dict, render_mode=None):
     def _init():
         # from registered gym env call make
         # env = gym.make('CartPoleSwingUpRandom',  render_mode='human')
-        env = gym.make(env_id, render_mode = 'human')
+        env = gym.make(env_id, render_mode = render_mode)
         return RandomizedEnv(env, param_dict)
     return _init
 
@@ -115,15 +115,15 @@ envs = DummyVecEnv([mod_make_env('CartPoleSwingUpRandom', params) for _ in range
 # Log env parameters
 # current_params = [env.env.env.current_params for env in envs.envs]
 # for env in env_parameters:
-print("\nRandomized Parameters per Environment:")
-for i, p in enumerate(current_params):
-    
-    print(f"Env {i+1}:")
-    print(p.items())
-    for key, value in p.items():
-        print(f" {key:<10}: {value:.2E}")
-    print("-"*20)
-
+# print("\nRandomized Parameters per Environment:")
+# for i, p in enumerate(current_params):
+#     
+#     print(f"Env {i+1}:")
+#     print(p.items())
+#     for key, value in p.items():
+#         print(f" {key:<10}: {value:.2E}")
+#     print("-"*20)
+# 
 
 # Load or initialize the TD3 model
 
@@ -149,10 +149,37 @@ else:
         verbose=0
     )
 
+# custom callback to render during training
+from stable_baselines3.common.callbacks import BaseCallback
+
+class ExternalRenderCallback(BaseCallback):
+    def __init__(self, render_env): # render_freq = 1000
+        super().__init__()
+        self.render_env = render_env
+        # self.render_freq = render_freq
+        self.obs = self.render_env.reset()
+
+    def _on_step(self) -> bool:
+        # if self.n_calls % self.render_freq == 0:
+        action, _ = self.model.predict(self.obs, deterministic = True)
+        self.obs, _, dones, _ = self.render_env.step(action)
+        
+        self.render_env.envs[0].render()
+
+        if dones[0]:
+            self.render_env.envs[0].reset()
+        return True
+
+# render_env = gym.make('CartPoleSwingUpRandom', render_mode = 'human')
+# render_env = RandomizedEnv(render_env, params)
+# render_env = envs
+render_env = DummyVecEnv([mod_make_env('CartPoleSwingUpRandom', params, render_mode='human') for _ in range(int(num_envs / num_envs))])
+
 # Train the model if the user specifies a training duration
 if train_timesteps is not None:
     print('--------------Training the Model--------------')
-    model.learn(total_timesteps=train_timesteps)
+    model.learn(total_timesteps=train_timesteps, 
+                callback = ExternalRenderCallback(render_env))
 
 
 # Save the trained model if a save path is specified

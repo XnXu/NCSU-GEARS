@@ -326,7 +326,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
     def step(self, action):
         # !!this block may contain bugs!!
         # Cast action to float to strip np trappings
-        force = self.force_mag * action
+        force = self.force_mag * float(action)
         # force = float(np.clip( self.max_action * action, -self.max_action, self.max_action))
 
         # Nikki modified the following force from continuous_mountain_car
