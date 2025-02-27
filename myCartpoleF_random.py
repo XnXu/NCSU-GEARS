@@ -295,7 +295,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         # self.state = (x, x_dot, theta, theta_dot)
         return np.array( (x, x_dot,theta, theta_dot), dtype = np.float32).flatten()
 
-    def reward(self, terminated, off_track):
+    def reward(self, terminated, off_track, action):
 
         x, x_dot, theta, theta_dot = self.state
         cos = np.cos(theta)
@@ -311,7 +311,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         B = 0
         if abs(x) > x_bound:
             B = 1
-        reward = -0.1 * (5 * theta**2 + 0.5 * x**2 + 0.2 * x_dot**2 + 0.005 * self.previous_force**2) - 100 * B
+        reward = -0.1 * (5 * theta**2 + 0.5 * x**2 + 0.2 * x_dot**2 + 0.1 * (self.previous_force - self.force_mag * action ) **2 ) - 100 * B
         # Reward function
 
         # Apply off-track penalty and termination
@@ -337,7 +337,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         terminated = bool(abs(theta) < self.theta_threshold_radians / 4)  # 1 if pole stands up - can turn off
         off_track = bool(abs(x) > self.x_threshold)
 
-        reward = self.reward(terminated, off_track)
+        reward = self.reward(terminated, off_track, 0) # TODO: penalize u_dot
         self.previous_force = force
         # Nikki copied the following reward from continuous_mountain_car
         # reward = 0.0

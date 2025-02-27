@@ -17,6 +17,8 @@ from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.td3.policies import TD3Policy
+import matplotlib
+matplotlib.use('Agg') # non interactive backend to save plots
 import matplotlib.pyplot as plt
 
 ## this test adds noise to obs and action
@@ -131,9 +133,10 @@ else:
 
 if eval_episodes is not None:
     print('------Evaluating Control Without Model Mismatch------')
-    
-    env = DummyVecEnv([lambda: gym.make('CartPoleSwingUpRandom',render_mode='human')])
+    # TODO: add mod_make_env as a function here to randomize env params
+    # env = DummyVecEnv([lambda: gym.make('CartPoleSwingUpRandom',render_mode='human')])
     for episode in range(eval_episodes):
+        env = DummyVecEnv([lambda: gym.make('CartPoleSwingUpRandom',render_mode='human')])
         # Reset the environment at the start of each episode
         obs = env.reset()
         done = False
@@ -161,7 +164,7 @@ if eval_episodes is not None:
             # Render the environment
             env.render()
         
-        env.close()
+        # env.close()
         print(f'Episode: {episode + 1} | Total Reward: {total_reward}')
         fig, axes = plt.subplots(4, 1, figsize=(8, 12))  # 4 rows, 1 column
 
@@ -178,6 +181,6 @@ if eval_episodes is not None:
         axes[3].set_ylabel('force')
 
         plt.tight_layout()  # Adjusts layout to prevent overlapping labels
-        plt.show()
+        plt.savefig("model/test_trajectories_250226.png", dpi=300)
        
-# env.close()
+env.close()
