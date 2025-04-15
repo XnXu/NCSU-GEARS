@@ -67,8 +67,8 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
     }
 
     def __init__(self, render_mode: Optional[str] = None):
-        self.fps = 100 # Nikki changed from 50 to 100
-
+        self.fps = 50 # lab manual says control with derivative should not exceed 50Hz
+        
         self.gravity = 9.81
         self.masscart = 0.57+0.37
         self.masspole = 0.230
@@ -89,14 +89,11 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         ''' # mod Bp'''
         self.Bp = 0.0024 # viscous damping doecient, as seen at the pendulum axis
         
-        # param = Jm, Beq, Bp
-        # self.Jm = param["Jm"]
-        # self.Beq = param["Beq"]
-        # self.Bp = param["Bp"]
-
 
         self.force_mag = 10.0 # should be 8 for our case?
         self.tau = 1/self.fps  # seconds between state updates
+        self.filter_tau = 0.3 # lowpass filter on action
+
         self.metadata = {
             "render_modes": ["human", "rgb_array"],
             "render_fps": int(np.round(1.0 / self.tau)),
@@ -105,27 +102,11 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         # self.kinematics_integrator = "semi-implicit-euler" # newly added from native CartPole
         self.kinematics_integrator = "RK4"
 
-        # copied the following from mountain_car
-
-        """
-        self.min_action = -1.0
-        self.max_action = 1.0
-        self.min_position = -1.2
-        self.max_position = 0.6
-        self.max_speed = 0.07
-        self.goal_position = (
-            0.45  # was 0.5 in gymnasium, 0.45 in Arnaud de Broissia's version
-        )
-        self.goal_velocity = goal_velocity
-        self.power = 0.0015
-        """
-
-
         # Angle at which to fail the episode
         # self.theta_threshold_radians = 12  * math.pi / 180 # according to Dylan's thesis
         self.theta_threshold_radians = 0.2 # approximatedly 12 deg
 #        self.x_threshold = 0.25 # lab result triggers watchdog
-        self.x_threshold = 0.25
+        self.x_threshold = 0.3
         # Angle limit set to 2 * theta_threshold_radians so failing observation
         # is still within bounds
         # recall observation = sin theta, cos theta, theta_dot, x, x_dot !!!
@@ -162,25 +143,41 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.steps_beyond_terminated = None
 
         self.previous_force = 0
-        # seems to be outdated
+        self.filtered_control = np.zeros(self.action_space.shape)
+        # record history of filtered and unfiltered actions
+        self.state_history = []
+        self.raw_control_history = []
+        self.filtered_control_history = []
+    
+    def set_params(self, param_ranges):
+        # param bound should be a dict of parameters that needs randomization near nominal values
         """
-        self.seed()
-        self.viewer = None
-        self.state = None
-
-        self.steps_beyond_done = None
-
-        def seed(self, seed=None):
-            self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+        self.param_range = dict(
+                    '''# mod Jm'''
+                    'Jm': param_bound['Jm'].(Jm, self.Jm),  # = 3.90e-7 # rotor moment of inertia
+                    'Kg': np.random.uniform(self.Kg, self.Kg),  # = 3.71 # planetary gearbox gear ratio
+                    'Rm': np.random.uniform(self.Rm, self.Rm),  # = 2.6 # motor armature resistance
+                    'Kt': np.random.uniform(self.Kt, self.Kt),  # = 0.00767 # motor torque constant
+                    'Km': np.random.uniform(self.Km, self.Km),  # = 0.00767 # Back-ElectroMotive-Force (EMF) Constant
+                    # both of these are in N.m.s/RAD, not degrees
+                    ''' # mod Beq'''
+                    'Beq': np.random.uniform(self.Beq, self.Beq), # = 5.4 # viscous damping coeff at motor pinion
+                    ''' # mod Bp'''
+                    'Bp': np.random.uniform(self.Bp, self.Bp) # = 0.0024 # viscous damping coeff at pendulum axis
+                )
         """
-
-        """
-        ## In native CartPole beginning part - possibly already has integrated seeding
-        >>> env.reset(seed=123, options={"low": 0, "high": 1})
-        (array([0.6823519 , 0.05382102, 0.22035988, 0.18437181], dtype=float32), {})
-        """
-
+        
+        self.param_ranges = param_ranges
+        self.current_params = {}
+        
+        """ randomize and apply new parameters on each reset"""
+        
+        self.current_params = {
+                key: np.random.uniform(low, high) for key, (low, high) in self.param_ranges.items() 
+        }
+        
+        return self.current_params, self.param_ranges
+        
     def RHS(self, y, force):
 
         assert self.state is not None, "Call reset before using step method."
@@ -201,51 +198,6 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         return np.array( (x_dot, xacc, theta_dot, thetaacc), dtype=np.float32).flatten()
 
-
-    def stepPhysics(self, force):
-        # assert self.action_space.contains(
-        #     action
-        # ), f"{action!r} ({type(action)}) invalid"
-
-        assert self.state is not None, "Call reset before using step method."
-        # x, theta, x_dot, theta_dot = self.state
-        # to be consistent with native CartPole state = x, x_dot, theta, theta_dot
-        x, x_dot, theta, theta_dot = self.state
-
-        costheta = math.cos(theta)
-        sintheta = math.sin(theta)
-
-        # denominator used in a bunch of stuff
-        d = 4 * self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + 4 * self.Jm * self.Kg**2
-
-
-        xacc = ((-4 * (self.Rm * self.r_mp**2 * self.Beq + self.Kg**2 * self.Kt * self.Km)) / (self.Rm *(d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * x_dot + ((-3 * self.Bp * self.r_mp**2 * costheta) / (self.length * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * theta_dot + ((-4 * self.masspole * self.length * self.r_mp**2 * sintheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * theta_dot**2 + ((3 * self.masspole * self.gravity * self.r_mp**2 * costheta * sintheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) + (4 * self.r_mp * self.Kg * self.Kt) / (self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * force
-
-        thetaacc = ((-3 * (self.Rm * self.r_mp**2 * self.Beq + self.Kg**2 * self.Kt * self.Km) * costheta) / (self.length * self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * x_dot + ((-3 * (self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + self.Jm * self.Kg**2) * self.Bp) / (self.masspole * self.length**2 * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) * theta_dot + ((-3 * self.masspole * self.r_mp**2 * sintheta * costheta) / (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * theta_dot**2 + ((3 * (self.masscart * self.r_mp**2 + self.masspole * self.r_mp**2 + self.Jm * self.Kg**2) * self.gravity * sintheta) / (self.length * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2))) + (3 * self.r_mp * self.Kg * self.Kt * costheta) / (self.length * self.Rm * (d + 3 * self.r_mp**2 * self.masspole * sintheta**2)) * force
-
-        if self.kinematics_integrator == "euler":
-            x = x + self.tau * x_dot
-            x_dot = x_dot + self.tau * xacc
-            theta = theta + self.tau * theta_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-        if self.kinematics_integrator == "semi-euler":
-            x_dot = x_dot + self.tau * xacc
-            x = x + self.tau * x_dot
-            theta_dot = theta_dot + self.tau * thetaacc
-            theta = theta + self.tau * theta_dot
-
-        if self.kinematics_integrator == "RK4":
-            # RK4
-            y = self.state
-            k1 = self.RHS(y, force = force)
-            k2 = self.RHS(y + self.tau * k1 / 2, force = force)
-            k3 = self.RHS(y + self.tau * k2 / 2, force = force)
-            k4 = self.RHS(y + self.tau * k3, force = force)
-            y = y + self.tau/6 * (k1 + 2 * k2 + 2 * k3 + k4)
-            x, x_dot, theta, theta_dot = y
-
-        # self.state = (x, x_dot, theta, theta_dot)
-        return np.array( (x, x_dot,theta, theta_dot), dtype = np.float32).flatten()
 
     def stepSwingUp(self, force):
         # assert self.action_space.contains(
@@ -295,7 +247,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         # self.state = (x, x_dot, theta, theta_dot)
         return np.array( (x, x_dot,theta, theta_dot), dtype = np.float32).flatten()
 
-    def reward(self, terminated, off_track, action):
+    def reward(self, terminated, off_track):
 
         x, x_dot, theta, theta_dot = self.state
         cos = np.cos(theta)
@@ -311,9 +263,12 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         B = 0
         if abs(x) > x_bound:
             B = 1
-        reward = -0.1 * (5 * theta**2 + 0.5 * x**2 + 0.2 * x_dot**2 + 0.1 * (self.previous_force - self.force_mag * action ) **2 ) - 100 * B
-        # Reward function
-
+        reward = -(0.1 * (x/0.25)**2 + 0.4 * (x_dot/0.25)**2 + 10 * (theta/math.pi)**2 + 0.1 * (theta_dot/math.pi)**2 + 0.01 * (self.previous_force)**2 ) - 100 * B
+        # Reward function that worked ok ish on march 10, 2025
+        # reward = -(0.1 * x**2 + 0.1 * x_dot**2 + 0.5 * theta**2 + 0.01 * (self.previous_force)**2 ) - 100 * B
+        # energy based reward function
+        # energy = 2/3 * self.masspole * self.length ** 2 * theta_dot ** 2 + self.masspole * self.length * self.gravity * (cos - 1)
+        # reward = energy ** 2 + 0.001 * (1 - cos ** 3)
         # Apply off-track penalty and termination
         #if terminated or off_track:
         if off_track:
@@ -326,30 +281,32 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
     def step(self, action):
         # !!this block may contain bugs!!
         # Cast action to float to strip np trappings
-        force = self.force_mag * float(action)
-        # force = float(np.clip( self.max_action * action, -self.max_action, self.max_action))
-
+        # action = float(np.clip( self.max_action * action, -self.max_action, self.max_action))
+        # self.raw_control_history.append(self.force_mag * action.copy())
+        self.raw_control_history.append(self.force_mag * action[0])
+        if self.filter_tau is not None:
+            assert self.filter_tau > 0, "Make sure filter time constant is positive and bigger than 2*dt"
+            self.filtered_action += (self.tau / self.filter_tau) * (action - self.filtered_action)
+            force = self.force_mag * self.filtered_action[0]
+            # force = float(np.clip( self.max_action * action, -self.max_action, self.max_action))
+            self.filtered_control_history.append(force.copy())
+        else:
+            force = self.force_mag * action[0]
         # Nikki modified the following force from continuous_mountain_car
         # force = min(max(action[0], -self.max_action), self.max_action) * self.max_action
         self.state = self.stepSwingUp(force)
         x, x_dot, theta, theta_dot = self.state
+        # self.state_history.append(self.state.copy())
 
         terminated = bool(abs(theta) < self.theta_threshold_radians / 4)  # 1 if pole stands up - can turn off
         off_track = bool(abs(x) > self.x_threshold)
 
-        reward = self.reward(terminated, off_track, 0) # TODO: penalize u_dot
+        reward = self.reward(terminated, off_track) # TODO: penalize u_dot
         self.previous_force = force
-        # Nikki copied the following reward from continuous_mountain_car
-        # reward = 0.0
-        # if terminated:
-        #     reward = 100.0
-        # reward -= math.pow(action[0], 2) * 0.1
-        # Nikki changed from above to below according  to:
-        # Matlab Train DDPG to swing up and balance pole
-        #
 
         obs = np.array( (x, x_dot, np.cos(theta), np.sin(theta), theta_dot), dtype=np.float32).flatten()
-
+        info = {"raw": self.force_mag * action[0], 
+                "filtered": self.force_mag * self.filtered_action[0]}
         """
         #NX changed from above to below
         reward = int(not terminated)
@@ -359,7 +316,7 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         if self.render_mode == "human":
             self.render()
         terminated = False
-        return obs, reward, terminated, off_track, {}
+        return obs, reward, terminated, off_track, info
                  # quad_reward, terminated, False, {}
                  # nikki_: should the step also outputs self.state?
 
@@ -394,10 +351,11 @@ class CartPoleSwingUp(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         # changed obs to be consistent as before in step
 
         obs = np.array( (x, x_dot, np.cos(theta), np.sin(theta), theta_dot), dtype=np.float32).flatten()
-        #obs = np.array((np.sin(theta), np.cos(theta), theta_dot, x, x_dot),
-        #              dtype=np.float32).flatten()
-        # to go from observation (obs) angles to state space angle, need the following transformation (rotate the coordinate by pi/2):
-        # state_angle = math.atan2(obs_cosangle, -obs_sinangle) - pi/2
+        
+        # record filtered actions
+        self.filtered_action = np.zeros(self.action_space.shape)
+        self.raw_control_history = []
+        self.filtered_control_history = []
 
         if self.render_mode == "human":
             self.render()
